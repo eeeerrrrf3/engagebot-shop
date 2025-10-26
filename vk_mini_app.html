@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngageBot - CSGO Магазин</title>
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 15px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        .header h1 {
+            font-size: 1.6em;
+            margin-bottom: 5px;
+            color: #4ecdc4;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .nav-btn.active {
+            background: #4ecdc4;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Стили магазина */
+        .shop-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+        }
+
+        .category-select, .sort-select {
+            min-width: 150px;
+        }
+
+        #categorySelect, #sortSelect {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .price-filter {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 170px;
+        }
+
+        .price-filter input {
+            width: 65px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .price-filter span {
+            color: #ccc;
+            font-weight: bold;
+        }
+
+        /* Сетка предметов */
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .item-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .item-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .item-image {
+            width: 100%;
+            height: 100px;
+            object-fit: contain;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+        }
+
+        .item-name {
+            font-size: 12px;
+            margin-bottom: 6px;
+            line-height: 1.3;
+            height: 28px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .item-price {
+            font-size: 14px;
+            font-weight: bold;
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+
+        .buy-btn {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            background: #4ecdc4;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+
+        .buy-btn:hover {
+            background: #45b8b0;
+        }
+
+        /* Пагинация */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        /* Профиль */
+        .profile-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 100%;
+        }
+
+        .balance {
+            font-size: 1.8em;
+            text-align: center;
+            margin: 15px 0;
+            color: #4ecdc4;
+        }
+
+        .trade-link-input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            margin: 10px 0;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #4ecdc4;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Загрузка */
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #ccc;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .items-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+            
+            .shop-controls {
+                flex-direction: column;
+            }
+            
+            .search-box, .category-select, .price-filter, .sort-select {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 EngageBot CSGO</h1>
+            <p>Покупайте скины за монеты</p>
+        </div>
+
+        <div class="nav">
+            <button class="nav-btn active" onclick="showSection('shop')">🛍️ Магазин</button>
+            <button class="nav-btn" onclick="showSection('profile')">👤 Профиль</button>
+        </div>
+
+        <!-- Магазин -->
+        <div id="shop" class="section active">
+            <div class="shop-controls">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 Поиск скинов..." 
+                           oninput="debouncedSearch(this.value)">
+                </div>
+                <div class="category-select">
+                    <select id="categorySelect" onchange="loadCategory(this.value)">
+                        <option value="pistols">🔫 Пистолеты</option>
+                        <option value="rifles">🏹 Винтовки</option>
+                        <option value="smgs">🔫 ПП</option>
+                        <option value="shotguns">💥 Дробовики</option>
+                        <option value="knives">🔪 Ножи</option>
+                        <option value="gloves">🧤 Перчатки</option>
+                        <option value="cases">🎁 Кейсы</option>
+                        <option value="stickers">🏷️ Стикеры</option>
+                    </select>
+                </div>
+                <div class="price-filter">
+                    <input type="number" id="minPrice" placeholder="0" min="0" max="1000" 
+                           onchange="updatePriceFilter()">
+                    <span>-</span>
+                    <input type="number" id="maxPrice" placeholder="1000" min="0" max="1000" 
+                           onchange="updatePriceFilter()">
+                </div>
+                <div class="sort-select">
+                    <select id="sortSelect" onchange="updateSort()">
+                        <option value="price_asc">Сначала дешевые</option>
+                        <option value="price_desc">Сначала дорогие</option>
+                        <option value="name_asc">По названию А-Я</option>
+                        <option value="name_desc">По названию Я-А</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="itemsList" class="loading">
+                <div>🔄 Загрузка товаров...</div>
+            </div>
+            
+            <div class="pagination">
+                <button id="prevBtn" onclick="prevPage()">◀ Назад</button>
+                <span id="pageInfo" class="page-info">Страница 1</span>
+                <button id="nextBtn" onclick="nextPage()">Вперед ▶</button>
+            </div>
+        </div>
+
+        <!-- Профиль -->
+        <div id="profile" class="section">
+            <div class="profile-card">
+                <h2>👤 Ваш профиль</h2>
+                <div class="balance" id="userBalance">0 ₽</div>
+                <p>Баланс: <span id="balanceAmount">0</span> монет</p>
+                
+                <div style="margin: 20px 0;">
+                    <h3>🔗 Торговая ссылка Steam</h3>
+                    <input type="text" id="tradeLink" class="trade-link-input" 
+                           placeholder="https://steamcommunity.com/tradeoffer/new/?partner=...">
+                    <button class="save-btn" onclick="saveTradeLink()">💾 Сохранить ссылку</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // VK Bridge инициализация
+        let currentUser = { id: null };
+        let currentPage = 0;
+        let currentCategory = 'pistols';
+        let currentSearch = '';
+        let currentMinPrice = 0;
+        let currentMaxPrice = 1000;
+        let currentSort = 'price_asc';
+        let hasMore = true;
+
+        // Инициализация VK Mini App
+        async function initVK() {
+            try {
+                // Инициализируем VK Bridge
+                await vkBridge.send('VKWebAppInit');
+                
+                // Получаем данные пользователя
+                const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+                currentUser.id = userInfo.id.toString();
+                
+                console.log('VK User:', currentUser);
+                
+                // Загружаем данные
+                initFilters();
+                loadItems();
+                loadUserProfile();
+                
+            } catch (error) {
+                console.error('VK init error:', error);
+                // Fallback для тестирования вне VK
+                currentUser.id = "123456789";
+                initFilters();
+                loadItems();
+                loadUserProfile();
+            }
+        }
+
+        // Инициализация фильтров
+        function initFilters() {
+            document.getElementById('minPrice').value = currentMinPrice;
+            document.getElementById('maxPrice').value = currentMaxPrice;
+            document.getElementById('sortSelect').value = currentSort;
+        }
+
+        // Навигация
+        function showSection(sectionName) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(sectionName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (sectionName === 'profile') {
+                loadUserProfile();
+            }
+        }
+
+        // Обновление фильтра цены
+        function updatePriceFilter() {
+            const minPrice = parseInt(document.getElementById('minPrice').value) || 0;
+            const maxPrice = parseInt(document.getElementById('maxPrice').value) || 1000;
+            
+            // Валидация
+            if (minPrice < 0) {
+                document.getElementById('minPrice').value = 0;
+                currentMinPrice = 0;
+            } else {
+                currentMinPrice = minPrice;
+            }
+            
+            if (maxPrice > 1000) {
+                document.getElementById('maxPrice').value = 1000;
+                currentMaxPrice = 1000;
+            } else if (maxPrice < currentMinPrice) {
+                document.getElementById('maxPrice').value = currentMinPrice;
+                currentMaxPrice = currentMinPrice;
+            } else {
+                currentMaxPrice = maxPrice;
+            }
+            
+            currentPage = 0;
+            loadItems();
+        }
+
+        // Обновление сортировки
+        function updateSort() {
+            currentSort = document.getElementById('sortSelect').value;
+            currentPage = 0;
+            loadItems();
+        }
+
+        // Загрузка категории
+        async function loadCategory(category, page = 0) {
+            currentCategory = category;
+            currentPage = page;
+            currentSearch = '';
+            
+            document.getElementById('searchInput').value = '';
+            await loadItems();
+        }
+
+        // Поиск с дебаунсом
+        let searchTimeout;
+        function debouncedSearch(query) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = query;
+                currentPage = 0;
+                loadItems();
+            }, 500);
+        }
+
+        // Загрузка предметов
+        async function loadItems() {
+            try {
+                const itemsList = document.getElementById('itemsList');
+                itemsList.innerHTML = '<div class="loading">🔄 Загрузка товаров...</div>';
+                
+                let url;
+                if (currentSearch) {
+                    url = `http://localhost:8000/api/csmani/search?query=${encodeURIComponent(currentSearch)}&max_price=1000`;
+                } else {
+                    url = `http://localhost:8000/api/csmani/items?category=${currentCategory}&page=${currentPage}&limit=20&max_price=1000`;
+                }
+                
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.success && data.items && data.items.length > 0) {
+                    // Применяем фильтры на клиенте
+                    let filteredItems = data.items.filter(item => 
+                        item.price >= currentMinPrice && item.price <= currentMaxPrice
+                    );
+                    
+                    // Применяем сортировку
+                    filteredItems = sortItems(filteredItems, currentSort);
+                    
+                    if (filteredItems.length > 0) {
+                        itemsList.innerHTML = '<div class="items-grid"></div>';
+                        const grid = itemsList.querySelector('.items-grid');
+                        
+                        filteredItems.forEach(item => {
+                            const card = document.createElement('div');
+                            card.className = 'item-card';
+                            card.innerHTML = `
+                                <img src="${item.image}" alt="${item.name}" class="item-image" 
+                                     onerror="this.src='https://via.placeholder.com/160x100/2a2a3e/ffffff?text=CSGO'">
+                                <div class="item-name">${item.name}</div>
+                                <div class="item-price">${item.price.toFixed(2)} ₽</div>
+                                <button class="buy-btn" onclick="buyItem('${item.id}', ${item.price})">
+                                    🛒 Купить
+                                </button>
+                            `;
+                            grid.appendChild(card);
+                        });
+                        
+                        updatePagination(data.has_more);
+                    } else {
+                        itemsList.innerHTML = '<div class="loading">😔 Товаров в выбранном ценовом диапазоне не найдено</div>';
+                        updatePagination(false);
+                    }
+                } else {
+                    itemsList.innerHTML = '<div class="loading">😔 Товары не найдены</div>';
+                    updatePagination(false);
+                }
+            } catch (err) {
+                itemsList.innerHTML = '<div class="loading">❌ Ошибка загрузки</div>';
+                console.error('Ошибка:', err);
+            }
+        }
+
+        // Функция сортировки
+        function sortItems(items, sortType) {
+            switch(sortType) {
+                case 'price_asc':
+                    return items.sort((a, b) => a.price - b.price);
+                case 'price_desc':
+                    return items.sort((a, b) => b.price - a.price);
+                case 'name_asc':
+                    return items.sort((a, b) => a.name.localeCompare(b.name));
+                case 'name_desc':
+                    return items.sort((a, b) => b.name.localeCompare(a.name));
+                default:
+                    return items;
+            }
+        }
+
+        // Пагинация
+        function updatePagination(hasMoreItems) {
+            hasMore = hasMoreItems;
+            document.getElementById('pageInfo').textContent = `Страница ${currentPage + 1}`;
+            document.getElementById('prevBtn').disabled = currentPage === 0;
+            document.getElementById('nextBtn').disabled = !hasMore;
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                loadItems();
+            }
+        }
+
+        function nextPage() {
+            if (hasMore) {
+                currentPage++;
+                loadItems();
+            }
+        }
+
+        // Покупка предмета
+        async function buyItem(itemId, price) {
+            if (!currentUser.id) {
+                alert('❌ Сначала войдите в систему');
+                return;
+            }
+            
+            try {
+                // Показываем уведомление VK
+                await vkBridge.send('VKWebAppShowNotification', {
+                    notification_text: `Покупка предмета за ${price.toFixed(2)} монет`
+                });
+                
+                const res = await fetch('http://localhost:8000/api/csmani/buy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        item_id: itemId,
+                        price: price,
+                        admin_id: 'test_admin',
+                        user_id: currentUser.id
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    await vkBridge.send('VKWebAppShowNotification', {
+                        notification_text: '✅ Предмет успешно куплен!'
+                    });
+                    loadUserProfile();
+                } else {
+                    await vkBridge.send('VKWebAppShowNotification', {
+                        notification_text: `❌ ${data.error}`
+                    });
+                }
+            } catch (err) {
+                await vkBridge.send('VKWebAppShowNotification', {
+                    notification_text: '❌ Ошибка при покупке'
+                });
+            }
+        }
+
+        // Загрузка профиля
+        async function loadUserProfile() {
+            if (!currentUser.id) return;
+            
+            try {
+                const res = await fetch(`http://localhost:8000/api/user/${currentUser.id}`);
+                const data = await res.json();
+                
+                if (data.success) {
+                    document.getElementById('userBalance').textContent = data.user.balance + ' ₽';
+                    document.getElementById('balanceAmount').textContent = data.user.balance;
+                    document.getElementById('tradeLink').value = data.user.trade_link || '';
+                }
+            } catch (err) {
+                console.error('Ошибка загрузки профиля:', err);
+            }
+        }
+
+        // Сохранение трейд-ссылки
+        async function saveTradeLink() {
+            const link = document.getElementById('tradeLink').value;
+            if (!currentUser.id) {
+                alert('❌ Сначала войдите в систему');
+                return;
+            }
+            
+            if (link) {
+                try {
+                    const res = await fetch(`http://localhost:8000/api/user/${currentUser.id}/trade-link`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ trade_link: link })
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        await vkBridge.send('VKWebAppShowNotification', {
+                            notification_text: '✅ Ссылка сохранена!'
+                        });
+                    } else {
+                        await vkBridge.send('VKWebAppShowNotification', {
+                            notification_text: '❌ Ошибка сохранения'
+                        });
+                    }
+                } catch (err) {
+                    await vkBridge.send('VKWebAppShowNotification', {
+                        notification_text: '❌ Ошибка при сохранении'
+                    });
+                }
+            } else {
+                await vkBridge.send('VKWebAppShowNotification', {
+                    notification_text: '⚠️ Введите торговую ссылку'
+                });
+            }
+        }
+
+        // Запускаем приложение
+        document.addEventListener('DOMContentLoaded', initVK);
+    </script>
+</body>
+</html>
